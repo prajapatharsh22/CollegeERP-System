@@ -39,7 +39,7 @@ const StudentDashboard = ({ user, onLogout }) => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/student/dashboard/${user.id}`);
+      const response = await fetch(`https://collegeerp-system.onrender.com/api/student/dashboard/${user.id}`);
       if (response.ok) {
         const result = await response.json();
         setData(result);
@@ -74,7 +74,7 @@ const StudentDashboard = ({ user, onLogout }) => {
     if (!newAvatarUrl.trim()) return;
     setUpdatingAvatar(true);
     try {
-      const response = await fetch('http://localhost:5000/api/users/update-avatar', {
+      const response = await fetch('https://collegeerp-system.onrender.com/api/users/update-avatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -116,7 +116,7 @@ const StudentDashboard = ({ user, onLogout }) => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/assignments/submit', {
+      const response = await fetch('https://collegeerp-system.onrender.com/api/assignments/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -145,7 +145,7 @@ const StudentDashboard = ({ user, onLogout }) => {
     // Simulate gateway response delay
     setTimeout(async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/student/pay-fee', {
+        const response = await fetch('https://collegeerp-system.onrender.com/api/student/pay-fee', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ studentId: user.id })

@@ -48,7 +48,7 @@ const Login = ({ onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch('https://collegeerp-system.onrender.com/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ const Login = ({ onLoginSuccess }) => {
     setReqLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/requests/create', {
+      const response = await fetch('https://collegeerp-system.onrender.com/api/requests/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,7 +141,7 @@ const Login = ({ onLoginSuccess }) => {
     setResetLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/reset-password', {
+      const response = await fetch('https://collegeerp-system.onrender.com/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

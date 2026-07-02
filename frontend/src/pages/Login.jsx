@@ -309,7 +309,7 @@ const Login = ({ onLoginSuccess }) => {
 
           {error && <div className="error-message">{error}</div>}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} autoComplete="off">
             {/* Role selection dropdown */}
             <div className="form-group">
               <label htmlFor="role">Select Role</label>
@@ -359,6 +359,7 @@ const Login = ({ onLoginSuccess }) => {
                   className="form-input"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -381,6 +382,7 @@ const Login = ({ onLoginSuccess }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{ paddingRight: '2.8rem' }}
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"

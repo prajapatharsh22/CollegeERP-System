@@ -451,7 +451,7 @@ const Login = ({ onLoginSuccess }) => {
             
             {reqError && <div className="error-message">{reqError}</div>}
 
-            <form onSubmit={handleRequestAccessSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+            <form onSubmit={handleRequestAccessSubmit} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
               <div className="form-group">
                 <label>Full Name</label>
                 <input 
@@ -542,6 +542,7 @@ const Login = ({ onLoginSuccess }) => {
                     style={{ padding: '0.65rem' }} 
                     value={reqUsername}
                     onChange={e => setReqUsername(e.target.value)}
+                    autoComplete="off"
                   />
                 </div>
                 <div className="form-group" style={{ flex: 1, minWidth: '150px' }}>
@@ -553,6 +554,7 @@ const Login = ({ onLoginSuccess }) => {
                     style={{ padding: '0.65rem' }} 
                     value={reqPassword}
                     onChange={e => setReqPassword(e.target.value)}
+                    autoComplete="new-password"
                   />
                 </div>
               </div>

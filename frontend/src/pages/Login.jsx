@@ -156,6 +156,15 @@ const Login = ({ onLoginSuccess }) => {
     setShowRequestModal(true);
   };
 
+  const openResetModal = (e) => {
+    e.preventDefault();
+    setResetIdentity('');
+    setResetNewPassword('');
+    setResetConfirmPassword('');
+    setResetError('');
+    setShowResetModal(true);
+  };
+
   const handleRequestAccessSubmit = async (e) => {
     e.preventDefault();
     if (!reqName || !reqEmail || !reqUsername || !reqPassword || !reqRole) {
@@ -416,7 +425,7 @@ const Login = ({ onLoginSuccess }) => {
               <label className="remember-me">
                 <input type="checkbox" style={{ accentColor: 'var(--accent)' }} /> Remember Me
               </label>
-              <a href="#" className="forgot-password" onClick={(e) => { e.preventDefault(); setShowResetModal(true); }}>Forgot Password?</a>
+              <a href="#" className="forgot-password" onClick={openResetModal}>Forgot Password?</a>
             </div>
 
             {/* Login Button */}
@@ -583,7 +592,7 @@ const Login = ({ onLoginSuccess }) => {
 
             {resetError && <div className="error-message">{resetError}</div>}
 
-            <form onSubmit={handleResetPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+            <form onSubmit={handleResetPasswordSubmit} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
               <div className="form-group">
                 <label>Username or Email Address</label>
                 <input 
@@ -593,6 +602,7 @@ const Login = ({ onLoginSuccess }) => {
                   style={{ padding: '0.65rem' }} 
                   value={resetIdentity}
                   onChange={e => setResetIdentity(e.target.value)}
+                  autoComplete="off"
                 />
               </div>
 
@@ -605,6 +615,7 @@ const Login = ({ onLoginSuccess }) => {
                   style={{ padding: '0.65rem' }} 
                   value={resetNewPassword}
                   onChange={e => setResetNewPassword(e.target.value)}
+                  autoComplete="new-password"
                 />
               </div>
 
@@ -617,6 +628,7 @@ const Login = ({ onLoginSuccess }) => {
                   style={{ padding: '0.65rem' }} 
                   value={resetConfirmPassword}
                   onChange={e => setResetConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
                 />
               </div>
 

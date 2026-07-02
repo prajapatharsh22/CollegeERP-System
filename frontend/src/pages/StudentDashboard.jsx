@@ -1,8 +1,3 @@
-
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? API_URL + ''
-  : 'https://collegeerp-system.onrender.com';
-
 import React, { useState, useEffect } from 'react';
 
 const StudentDashboard = ({ user, onLogout }) => {
@@ -1348,3 +1343,7 @@ const StudentDashboard = ({ user, onLogout }) => {
 };
 
 export default StudentDashboard;
+
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://127.0.0.1:5000'
+  : 'https://collegeerp-system.onrender.com';

@@ -1,8 +1,3 @@
-
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? API_URL + ''
-  : 'https://collegeerp-system.onrender.com';
-
 import React, { useState } from 'react';
 
 const Login = ({ onLoginSuccess }) => {
@@ -654,3 +649,7 @@ const Login = ({ onLoginSuccess }) => {
 };
 
 export default Login;
+
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://127.0.0.1:5000'
+  : 'https://collegeerp-system.onrender.com';

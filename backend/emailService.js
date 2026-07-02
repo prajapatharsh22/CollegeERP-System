@@ -60,8 +60,9 @@ initEmail();
 
 const sendLoginNotification = async (userEmail, userName, userRole) => {
   const currentDateTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+  const senderEmail = process.env.SMTP_FROM || 'prajapatharsh221205@gmail.com';
   const mailOptions = {
-    from: '"campusFlow System" <no-reply@campusflow.com>',
+    from: `"campusFlow System" <${senderEmail}>`,
     to: userEmail,
     subject: '⚠️ Security Alert: Successful Login Notification',
     html: `
@@ -137,8 +138,9 @@ User:    ${userName} (${userRole})
 };
 
 const sendOTPEmail = async (userEmail, otp) => {
+  const senderEmail = process.env.SMTP_FROM || 'prajapatharsh221205@gmail.com';
   const mailOptions = {
-    from: '"campusFlow Verification" <verify@campusflow.com>',
+    from: `"campusFlow Verification" <${senderEmail}>`,
     to: userEmail,
     subject: '🔑 campusFlow Access Portal: Email Verification OTP',
     html: `

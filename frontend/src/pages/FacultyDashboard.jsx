@@ -56,7 +56,7 @@ const FacultyDashboard = ({ user, onLogout }) => {
   const fetchFacultyData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`https://collegeerp-system.onrender.com/api/faculty/dashboard/${user.id}`);
+      const response = await fetch(`http://localhost:5000/api/faculty/dashboard/${user.id}`);
       if (response.ok) {
         const result = await response.json();
         setData(result);
@@ -109,7 +109,7 @@ const FacultyDashboard = ({ user, onLogout }) => {
     if (!newAvatarUrl.trim()) return;
     setUpdatingAvatar(true);
     try {
-      const response = await fetch('https://collegeerp-system.onrender.com/api/users/update-avatar', {
+      const response = await fetch('http://localhost:5000/api/users/update-avatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -154,7 +154,7 @@ const FacultyDashboard = ({ user, onLogout }) => {
     }));
 
     try {
-      const response = await fetch('https://collegeerp-system.onrender.com/api/attendance/mark', {
+      const response = await fetch('http://localhost:5000/api/attendance/mark', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -186,7 +186,7 @@ const FacultyDashboard = ({ user, onLogout }) => {
     }
 
     try {
-      const response = await fetch('https://collegeerp-system.onrender.com/api/assignments/create', {
+      const response = await fetch('http://localhost:5000/api/assignments/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -218,7 +218,7 @@ const FacultyDashboard = ({ user, onLogout }) => {
       return;
     }
     try {
-      const response = await fetch(`https://collegeerp-system.onrender.com/api/assignments/${id}`, {
+      const response = await fetch(`http://localhost:5000/api/assignments/${id}`, {
         method: 'DELETE'
       });
       if (response.ok) {
@@ -242,7 +242,7 @@ const FacultyDashboard = ({ user, onLogout }) => {
     }
 
     try {
-      const response = await fetch('https://collegeerp-system.onrender.com/api/notices/create', {
+      const response = await fetch('http://localhost:5000/api/notices/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -276,7 +276,7 @@ const FacultyDashboard = ({ user, onLogout }) => {
     }
 
     try {
-      const response = await fetch('https://collegeerp-system.onrender.com/api/marks/grade', {
+      const response = await fetch('http://localhost:5000/api/marks/grade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1490,7 +1490,7 @@ const FacultyDashboard = ({ user, onLogout }) => {
               onSubmit={async (e) => {
                 e.preventDefault();
                 try {
-                  const response = await fetch(`https://collegeerp-system.onrender.com/api/assignments/${editingAssignment.id}`, {
+                  const response = await fetch(`http://localhost:5000/api/assignments/${editingAssignment.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1578,7 +1578,7 @@ const FacultyNoticesManager = ({ noticesList, profileName, fetchFacultyData }) =
     setSuccess('');
 
     try {
-      const response = await fetch('https://collegeerp-system.onrender.com/api/notices/create', {
+      const response = await fetch('http://localhost:5000/api/notices/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, content, category, postedBy: `Dr. ${profileName}` })
@@ -1604,7 +1604,7 @@ const FacultyNoticesManager = ({ noticesList, profileName, fetchFacultyData }) =
   const handleDelete = async (noticeId) => {
     if (!window.confirm('Are you sure you want to delete this notice?')) return;
     try {
-      const response = await fetch(`https://collegeerp-system.onrender.com/api/notices/${noticeId}`, {
+      const response = await fetch(`http://localhost:5000/api/notices/${noticeId}`, {
         method: 'DELETE'
       });
       if (response.ok) {

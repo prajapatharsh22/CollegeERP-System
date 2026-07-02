@@ -25,8 +25,12 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   try {
+    const loginIdentity = username.toLowerCase().trim();
     const user = await models.User.findOne({
-      username: username.toLowerCase().trim(),
+      $or: [
+        { username: loginIdentity },
+        { email: loginIdentity }
+      ],
       password,
       role
     });
@@ -54,6 +58,63 @@ app.post('/api/auth/login', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Database error occurred' });
   }
+});
+
+// Global in-memory cache for OTP verification codes
+const otpCache = {};
+
+// Send 6-Digit OTP Email
+app.post('/api/auth/send-otp', async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'Email address is required' });
+  }
+
+  try {
+    // Generate a random 6-digit OTP code
+    const otp = (100000 + Math.floor(Math.random() * 900000)).toString();
+    const expires = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+
+    // Save to server memory cache
+    otpCache[email.toLowerCase().trim()] = { otp, expires };
+
+    // Send the OTP email using Ethereal transporter
+    await emailService.sendOTPEmail(email, otp);
+
+    res.json({ success: true, message: 'Verification OTP sent successfully!' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to send verification OTP' });
+  }
+});
+
+// Verify 6-Digit OTP Email
+app.post('/api/auth/verify-otp', async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({ error: 'Email address and OTP are required' });
+  }
+
+  const emailKey = email.toLowerCase().trim();
+  const cachedData = otpCache[emailKey];
+
+  if (!cachedData) {
+    return res.status(400).json({ error: 'No OTP requested or OTP has expired. Please send OTP again.' });
+  }
+
+  if (Date.now() > cachedData.expires) {
+    delete otpCache[emailKey];
+    return res.status(400).json({ error: 'OTP has expired. Please request a new one.' });
+  }
+
+  if (cachedData.otp !== otp.trim()) {
+    return res.status(400).json({ error: 'Invalid OTP code. Please try again.' });
+  }
+
+  // Clear cache after successful verification
+  delete otpCache[emailKey];
+
+  res.json({ success: true, message: 'Email verified successfully!' });
 });
 
 // Auth Reset Password Endpoint
@@ -658,6 +719,12 @@ app.post('/api/requests/create', async (req, res) => {
     if (requestExists) {
       return res.status(400).json({ error: 'A pending registration request already exists for this username' });
     }
+
+    // Clean up any old approved/rejected requests to prevent unique key errors since user no longer exists in main collection
+    await models.RegistrationRequest.deleteMany({
+      username: username.toLowerCase().trim(),
+      status: { $ne: 'Pending' }
+    });
 
     const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     await new models.RegistrationRequest({

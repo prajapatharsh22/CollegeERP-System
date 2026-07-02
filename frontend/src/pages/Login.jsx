@@ -33,6 +33,14 @@ const Login = ({ onLoginSuccess }) => {
   const [reqError, setReqError] = useState('');
   const [reqLoading, setReqLoading] = useState(false);
 
+  // OTP Verification states
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [otpSuccessMsg, setOtpSuccessMsg] = useState('');
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!role) {
@@ -48,7 +56,7 @@ const Login = ({ onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('https://collegeerp-system.onrender.com/api/auth/login', {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -71,6 +79,83 @@ const Login = ({ onLoginSuccess }) => {
     }
   };
 
+  // OTP Verification Handlers
+  const handleSendOTP = async () => {
+    if (!reqEmail) {
+      setOtpError('Please enter your email address first.');
+      return;
+    }
+    setOtpError('');
+    setOtpSuccessMsg('');
+    setOtpLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: reqEmail })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setOtpSent(true);
+        setOtpSuccessMsg('OTP sent to your email successfully!');
+      } else {
+        setOtpError(data.error || 'Failed to send OTP.');
+      }
+    } catch (err) {
+      setOtpError('Network error. Failed to send OTP.');
+      console.error(err);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otp) {
+      setOtpError('Please enter the 6-digit OTP code.');
+      return;
+    }
+    setOtpError('');
+    setOtpSuccessMsg('');
+    setOtpLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: reqEmail, otp })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setIsEmailVerified(true);
+        setOtpSuccessMsg('Email verified successfully! You can now send the request.');
+      } else {
+        setOtpError(data.error || 'Invalid OTP code.');
+      }
+    } catch (err) {
+      setOtpError('Network error. Failed to verify OTP.');
+      console.error(err);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const openRequestModal = (e) => {
+    e.preventDefault();
+    setReqName('');
+    setReqEmail('');
+    setReqUsername('');
+    setReqPassword('');
+    setReqRole('Student');
+    setReqError('');
+    setIsEmailVerified(false);
+    setOtp('');
+    setOtpSent(false);
+    setOtpError('');
+    setOtpSuccessMsg('');
+    setShowRequestModal(true);
+  };
+
   const handleRequestAccessSubmit = async (e) => {
     e.preventDefault();
     if (!reqName || !reqEmail || !reqUsername || !reqPassword || !reqRole) {
@@ -78,11 +163,16 @@ const Login = ({ onLoginSuccess }) => {
       return;
     }
 
+    if (!isEmailVerified) {
+      setReqError('Please verify your email address with OTP first.');
+      return;
+    }
+
     setReqError('');
     setReqLoading(true);
 
     try {
-      const response = await fetch('https://collegeerp-system.onrender.com/api/requests/create', {
+      const response = await fetch('http://localhost:5000/api/requests/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,6 +196,11 @@ const Login = ({ onLoginSuccess }) => {
         setReqUsername('');
         setReqPassword('');
         setReqRole('Student');
+        setIsEmailVerified(false);
+        setOtp('');
+        setOtpSent(false);
+        setOtpError('');
+        setOtpSuccessMsg('');
         setShowRequestModal(false);
       } else {
         setReqError(data.error || 'Failed to submit registration request.');
@@ -141,7 +236,7 @@ const Login = ({ onLoginSuccess }) => {
     setResetLoading(true);
 
     try {
-      const response = await fetch('https://collegeerp-system.onrender.com/api/auth/reset-password', {
+      const response = await fetch('http://localhost:5000/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -260,7 +355,7 @@ const Login = ({ onLoginSuccess }) => {
                 <input
                   id="username"
                   type="text"
-                  placeholder="e.g. harsh, mehta, admin"
+                  placeholder="Username or Email"
                   className="form-input"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -329,7 +424,7 @@ const Login = ({ onLoginSuccess }) => {
           </form>
 
           <p className="contact-admin">
-            Don't have an account? <a href="#" onClick={(e) => { e.preventDefault(); setShowRequestModal(true); }}>Contact Admin / Request Access</a>
+            Don't have an account? <a href="#" onClick={openRequestModal}>Contact Admin / Request Access</a>
           </p>
         </div>
       </div>
@@ -359,15 +454,71 @@ const Login = ({ onLoginSuccess }) => {
               </div>
 
               <div className="form-group">
-                <label>Email Address</label>
-                <input 
-                  type="email" 
-                  className="form-input" 
-                  placeholder="e.g. rohit@erp.com"
-                  style={{ padding: '0.65rem' }} 
-                  value={reqEmail}
-                  onChange={e => setReqEmail(e.target.value)}
-                />
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Email Address</span>
+                  {isEmailVerified && <span style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>✓ Verified</span>}
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input 
+                    type="email" 
+                    className="form-input" 
+                    placeholder="e.g. rohit@erp.com"
+                    style={{ padding: '0.65rem', flex: 1 }} 
+                    value={reqEmail}
+                    onChange={e => setReqEmail(e.target.value)}
+                    disabled={isEmailVerified}
+                  />
+                  {!isEmailVerified && (
+                    <button 
+                      type="button" 
+                      className="btn-primary" 
+                      style={{ padding: '0.65rem 1.2rem', whiteSpace: 'nowrap', fontSize: '0.85rem' }}
+                      onClick={handleSendOTP}
+                      disabled={otpLoading || !reqEmail}
+                    >
+                      {otpLoading && !otpSent ? 'Sending...' : otpSent ? 'Resend OTP' : 'Send OTP'}
+                    </button>
+                  )}
+                </div>
+
+                {/* OTP Input Field */}
+                {otpSent && !isEmailVerified && (
+                  <div style={{ marginTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 500 }}>Enter 6-Digit OTP Code</label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input 
+                        type="text" 
+                        maxLength="6"
+                        placeholder="6-Digit OTP" 
+                        className="form-input" 
+                        style={{ padding: '0.65rem', flex: 1 }}
+                        value={otp} 
+                        onChange={e => setOtp(e.target.value)}
+                      />
+                      <button 
+                        type="button" 
+                        className="btn-primary" 
+                        style={{ padding: '0.65rem 1.2rem', whiteSpace: 'nowrap', fontSize: '0.85rem' }} 
+                        onClick={handleVerifyOTP}
+                        disabled={otpLoading || !otp}
+                      >
+                        {otpLoading ? 'Verifying...' : 'Verify OTP'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Status Messages */}
+                {otpError && (
+                  <div style={{ color: 'var(--danger)', fontSize: '0.85rem', fontWeight: 500, marginTop: '0.4rem' }}>
+                    ❌ {otpError}
+                  </div>
+                )}
+                {otpSuccessMsg && (
+                  <div style={{ color: 'var(--success)', fontSize: '0.85rem', fontWeight: 500, marginTop: '0.4rem' }}>
+                    ✓ {otpSuccessMsg}
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -410,7 +561,7 @@ const Login = ({ onLoginSuccess }) => {
 
               <div className="modal-buttons">
                 <button type="button" className="btn-secondary" onClick={() => { setShowRequestModal(false); setReqError(''); }} disabled={reqLoading}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={reqLoading}>
+                <button type="submit" className="btn-primary" disabled={reqLoading || !isEmailVerified}>
                   {reqLoading ? 'Submitting Request...' : 'Send Request'}
                 </button>
               </div>

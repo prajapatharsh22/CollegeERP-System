@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const models = require('./models');
 
-const mongoURI = 'mongodb://127.0.0.1:27017/college_erp';
+const mongoURI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/college_erp';
 
 mongoose.connect(mongoURI)
   .then(() => {

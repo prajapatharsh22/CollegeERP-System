@@ -1,3 +1,8 @@
+
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? API_URL + ''
+  : 'https://collegeerp-system.onrender.com';
+
 import React, { useState } from 'react';
 
 const Login = ({ onLoginSuccess }) => {
@@ -56,7 +61,7 @@ const Login = ({ onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(API_URL + '/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,7 +95,7 @@ const Login = ({ onLoginSuccess }) => {
     setOtpLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/send-otp', {
+      const response = await fetch(API_URL + '/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: reqEmail })
@@ -120,7 +125,7 @@ const Login = ({ onLoginSuccess }) => {
     setOtpLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/verify-otp', {
+      const response = await fetch(API_URL + '/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: reqEmail, otp })
@@ -181,7 +186,7 @@ const Login = ({ onLoginSuccess }) => {
     setReqLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/requests/create', {
+      const response = await fetch(API_URL + '/api/requests/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -245,7 +250,7 @@ const Login = ({ onLoginSuccess }) => {
     setResetLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/reset-password', {
+      const response = await fetch(API_URL + '/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

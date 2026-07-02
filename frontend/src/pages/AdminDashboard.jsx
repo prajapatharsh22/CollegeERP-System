@@ -1,3 +1,8 @@
+
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? API_URL + ''
+  : 'https://collegeerp-system.onrender.com';
+
 import React, { useState, useEffect } from 'react';
 
 const AdminDashboard = ({ user, onLogout }) => {
@@ -37,7 +42,7 @@ const AdminDashboard = ({ user, onLogout }) => {
   const fetchAdminData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/admin/dashboard');
+      const response = await fetch(API_URL + '/api/admin/dashboard');
       if (response.ok) {
         const result = await response.json();
         setData(result);
@@ -65,7 +70,7 @@ const AdminDashboard = ({ user, onLogout }) => {
 
     setRegistering(true);
     try {
-      const response = await fetch('http://localhost:5000/api/users/create', {
+      const response = await fetch(API_URL + '/api/users/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -106,7 +111,7 @@ const AdminDashboard = ({ user, onLogout }) => {
     if (!window.confirm(confirmMsg)) return;
 
     try {
-      const response = await fetch('http://localhost:5000/api/requests/action', {
+      const response = await fetch(API_URL + '/api/requests/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requestId, action })
@@ -131,7 +136,7 @@ const AdminDashboard = ({ user, onLogout }) => {
   const fetchRegisteredUsers = async () => {
     setFetchingUsers(true);
     try {
-      const response = await fetch('http://localhost:5000/api/faculty/dashboard/2'); // Fallback seed fetch
+      const response = await fetch(API_URL + '/api/faculty/dashboard/2'); // Fallback seed fetch
       if (response.ok) {
         const result = await response.json();
         setUsersList(result.studentsList || []);
@@ -666,7 +671,7 @@ const AdminNoticesManager = ({ noticesList, fetchAdminData }) => {
     setSuccess('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/notices/create', {
+      const response = await fetch(API_URL + '/api/notices/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, content, category, postedBy: 'Admin' })
@@ -692,7 +697,7 @@ const AdminNoticesManager = ({ noticesList, fetchAdminData }) => {
   const handleDelete = async (noticeId) => {
     if (!window.confirm('Are you sure you want to delete this notice?')) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/notices/${noticeId}`, {
+      const response = await fetch(`${API_URL}/api/notices/${noticeId}`, {
         method: 'DELETE'
       });
       if (response.ok) {

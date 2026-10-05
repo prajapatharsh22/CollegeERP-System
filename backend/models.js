@@ -80,7 +80,6 @@ const registrationRequestSchema = new mongoose.Schema({
   created_at: { type: String, required: true }
 });
 
-userSchema.index({ username: 1 });
 userSchema.index({ email: 1 });
 attendanceSchema.index({ student_id: 1, subject_id: 1 });
 submissionSchema.index({ student_id: 1, assignment_id: 1 });

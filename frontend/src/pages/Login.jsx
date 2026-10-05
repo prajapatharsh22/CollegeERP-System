@@ -374,6 +374,9 @@ const Login = ({ onLoginSuccess }) => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   autoComplete="off"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
               </div>
             </div>
@@ -397,6 +400,9 @@ const Login = ({ onLoginSuccess }) => {
                   onChange={(e) => setPassword(e.target.value)}
                   style={{ paddingRight: '2.8rem' }}
                   autoComplete="new-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
                 <button
                   type="button"

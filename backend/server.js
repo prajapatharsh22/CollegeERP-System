@@ -55,7 +55,7 @@ app.post('/api/auth/login', async (req, res) => {
         { username: new RegExp('^' + loginIdentity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
         { email: new RegExp('^' + loginIdentity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }
       ],
-      password: cleanPassword,
+      password: new RegExp('^' + cleanPassword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i'),
       role: new RegExp('^' + cleanRole.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
     });
 
@@ -179,46 +179,54 @@ app.get('/api/student/dashboard/:studentId', async (req, res) => {
   const { studentId } = req.params;
 
   try {
-    // A. Profile
-    if (!mongoose.Types.ObjectId.isValid(studentId)) {
-      return res.status(400).json({ error: 'Invalid student ID' });
-    }
-    const profile = await models.User.findById(studentId);
+    // Parallel execution of all student dashboard data queries
+    const [profile, allAttendance, subjectsList, totalAssignmentsCount, studentSubmissions, assigns, fee, results, tt, notices] = await Promise.all([
+      models.User.findById(studentId).lean(),
+      models.Attendance.find({ student_id: studentId }).lean(),
+      models.Subject.find().lean(),
+      models.Assignment.countDocuments(),
+      models.Submission.find({ student_id: studentId }).lean(),
+      models.Assignment.find().populate('subject_id').sort({ due_date: 1 }).lean(),
+      models.Fee.findOne({ student_id: studentId }).lean(),
+      models.Result.find({ student_id: studentId }).populate('subject_id').lean(),
+      models.Timetable.find().populate({ path: 'subject_id', populate: { path: 'faculty_id' } }).lean(),
+      models.Notice.find().sort({ _id: -1 }).limit(10).lean()
+    ]);
+
     if (!profile) {
       return res.status(404).json({ error: 'Student not found' });
     }
 
-    // B. Attendance overall stats
-    const totalAttendance = await models.Attendance.countDocuments({ student_id: studentId });
-    const presentAttendance = await models.Attendance.countDocuments({ student_id: studentId, status: 'Present' });
+    // A. Attendance overall stats
+    const totalAttendance = allAttendance.length;
+    const presentAttendance = allAttendance.filter(a => a.status === 'Present').length;
     const overallAttendance = totalAttendance > 0 
       ? Math.round((presentAttendance / totalAttendance) * 100)
       : 0;
 
-    // C. Subject-wise Attendance
-    const subjectsList = await models.Subject.find();
-    const subjectAttendance = [];
-    for (const sub of subjectsList) {
-      const total = await models.Attendance.countDocuments({ student_id: studentId, subject_id: sub._id });
-      const present = await models.Attendance.countDocuments({ student_id: studentId, subject_id: sub._id, status: 'Present' });
-      subjectAttendance.push({
+    // B. Subject-wise Attendance (In-memory calculation)
+    const subjectAttendance = subjectsList.map(sub => {
+      const subAtt = allAttendance.filter(a => a.subject_id && a.subject_id.toString() === sub._id.toString());
+      const present = subAtt.filter(a => a.status === 'Present').length;
+      return {
         subjectName: sub.name,
         subjectCode: sub.code,
         present,
-        total
-      });
-    }
+        total: subAtt.length
+      };
+    });
 
-    // D. Pending Assignments
-    const totalAssignments = await models.Assignment.countDocuments();
-    const submittedCount = await models.Submission.countDocuments({ student_id: studentId });
-    const pendingSubmissions = Math.max(0, totalAssignments - submittedCount);
+    // C. Pending Assignments & Assignments List (In-memory calculation)
+    const submissionMap = new Map();
+    studentSubmissions.forEach(s => {
+      if (s.assignment_id) submissionMap.set(s.assignment_id.toString(), s);
+    });
 
-    const assigns = await models.Assignment.find().populate('subject_id').sort({ due_date: 1 });
-    const assignmentsList = [];
-    for (const a of assigns) {
-      const sub = await models.Submission.findOne({ assignment_id: a._id, student_id: studentId });
-      assignmentsList.push({
+    const pendingSubmissions = Math.max(0, totalAssignmentsCount - studentSubmissions.length);
+
+    const assignmentsList = assigns.map(a => {
+      const sub = submissionMap.get(a._id.toString());
+      return {
         id: toId(a._id),
         title: a.title,
         description: a.description,
@@ -226,11 +234,10 @@ app.get('/api/student/dashboard/:studentId', async (req, res) => {
         subjectName: a.subject_id ? a.subject_id.name : 'General',
         submissionStatus: sub ? sub.status : null,
         marks: sub ? sub.marks : null
-      });
-    }
+      };
+    });
 
-    // E. Fee Status
-    const fee = await models.Fee.findOne({ student_id: studentId });
+    // D. Fee Status
     const feeStatus = fee ? {
       amount_due: fee.amount_due,
       amount_paid: fee.amount_paid,
@@ -238,8 +245,7 @@ app.get('/api/student/dashboard/:studentId', async (req, res) => {
       last_date: fee.last_date
     } : { amount_due: 45000, amount_paid: 0, status: 'Pending', last_date: 'N/A' };
 
-    // F. Results
-    const results = await models.Result.find({ student_id: studentId }).populate('subject_id');
+    // E. Results
     const gradesList = results.map(r => ({
       marks_obtained: r.marks_obtained,
       total_marks: r.total_marks,
@@ -247,9 +253,8 @@ app.get('/api/student/dashboard/:studentId', async (req, res) => {
       subjectName: r.subject_id ? r.subject_id.name : 'Unknown',
       subjectCode: r.subject_id ? r.subject_id.code : 'Unknown'
     }));
-    
-    // G. Timetable
-    const tt = await models.Timetable.find().populate({ path: 'subject_id', populate: { path: 'faculty_id' } });
+
+    // F. Timetable
     const timetable = tt.map(t => ({
       subject: t.subject_id ? t.subject_id.name : 'Class',
       room: t.subject_id ? t.subject_id.room : 'N/A',
@@ -258,8 +263,7 @@ app.get('/api/student/dashboard/:studentId', async (req, res) => {
       end_time: t.end_time
     }));
 
-    // H. Notices
-    const notices = await models.Notice.find().sort({ _id: -1 }).limit(10);
+    // G. Notices
     const noticesList = notices.map(n => ({
       id: toId(n._id),
       title: n.title,
@@ -345,34 +349,38 @@ app.get('/api/faculty/dashboard/:facultyId', async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(facultyId)) {
       return res.status(400).json({ error: 'Invalid faculty ID' });
     }
-    const profile = await models.User.findById(facultyId);
+
+    const [profile, classes, totalStudentsCount, students, notices] = await Promise.all([
+      models.User.findById(facultyId).lean(),
+      models.Subject.find({ faculty_id: facultyId }).lean(),
+      models.User.countDocuments({ role: 'Student' }),
+      models.User.find({ role: 'Student' }).lean(),
+      models.Notice.find().sort({ _id: -1 }).lean()
+    ]);
+
     if (!profile) return res.status(404).json({ error: 'Faculty not found' });
 
-    // A. Classes Count
-    const classes = await models.Subject.find({ faculty_id: facultyId });
+    const classIds = classes.map(c => c._id);
     const totalClasses = classes.length;
 
-    // B. Total Students
-    const totalStudents = await models.User.countDocuments({ role: 'Student' });
+    const [totalAttRecords, presentAttRecords, assigns, tt] = await Promise.all([
+      models.Attendance.countDocuments({ subject_id: { $in: classIds } }),
+      models.Attendance.countDocuments({ subject_id: { $in: classIds }, status: 'Present' }),
+      models.Assignment.find({ subject_id: { $in: classIds } }).lean(),
+      models.Timetable.find({ subject_id: { $in: classIds } }).populate('subject_id').lean()
+    ]);
 
-    // C. Avg Attendance
-    const classIds = classes.map(c => c._id);
-    const totalAttRecords = await models.Attendance.countDocuments({ subject_id: { $in: classIds } });
-    const presentAttRecords = await models.Attendance.countDocuments({ subject_id: { $in: classIds }, status: 'Present' });
+    const assignIds = assigns.map(a => a._id);
+
+    const [pendingAssignments, subs] = await Promise.all([
+      models.Submission.countDocuments({ assignment_id: { $in: assignIds }, status: 'Pending' }),
+      models.Submission.find({ assignment_id: { $in: assignIds } }).populate('student_id').populate('assignment_id').lean()
+    ]);
+
     const avgAttendance = totalAttRecords > 0
       ? Math.round((presentAttRecords / totalAttRecords) * 100)
       : 93;
 
-    // D. Pending Grading
-    const assigns = await models.Assignment.find({ subject_id: { $in: classIds } });
-    const assignIds = assigns.map(a => a._id);
-    const pendingAssignments = await models.Submission.countDocuments({
-      assignment_id: { $in: assignIds },
-      status: 'Pending'
-    });
-
-    // E. Today's Schedule
-    const tt = await models.Timetable.find({ subject_id: { $in: classIds } }).populate('subject_id');
     const timetable = tt.map(t => ({
       subject: t.subject_id ? t.subject_id.name : 'Course',
       room: t.subject_id ? t.subject_id.room : 'N/A',
@@ -380,8 +388,6 @@ app.get('/api/faculty/dashboard/:facultyId', async (req, res) => {
       end_time: t.end_time
     }));
 
-    // F. Students List
-    const students = await models.User.find({ role: 'Student' });
     const studentsList = students.map(s => ({
       id: toId(s._id),
       name: s.name,
@@ -389,7 +395,6 @@ app.get('/api/faculty/dashboard/:facultyId', async (req, res) => {
       email: s.email
     }));
 
-    // G. Assignments List
     const assignmentsList = assigns.map(a => ({
       id: toId(a._id),
       title: a.title,
@@ -398,8 +403,6 @@ app.get('/api/faculty/dashboard/:facultyId', async (req, res) => {
       subjectName: classes.find(c => c._id.toString() === a.subject_id.toString())?.name || 'My Subject'
     }));
 
-    // H. Submissions List
-    const subs = await models.Submission.find({ assignment_id: { $in: assignIds } }).populate('student_id').populate('assignment_id');
     const submissionsList = subs.map(s => ({
       id: toId(s._id),
       file_name: s.file_name,
@@ -418,8 +421,6 @@ app.get('/api/faculty/dashboard/:facultyId', async (req, res) => {
       code: c.code
     }));
 
-    // Fetch notices board
-    const notices = await models.Notice.find().sort({ _id: -1 });
     const noticesList = notices.map(n => ({
       id: toId(n._id),
       title: n.title,

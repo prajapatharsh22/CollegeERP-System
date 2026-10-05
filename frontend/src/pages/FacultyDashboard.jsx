@@ -53,13 +53,15 @@ const FacultyDashboard = ({ user, onLogout }) => {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [gradeMarks, setGradeMarks] = useState('');
 
-  const fetchFacultyData = async () => {
+  const fetchFacultyData = async (retryCount = 0) => {
     try {
       setLoading(true);
+      setError('');
       const response = await fetch(`${API_URL}/api/faculty/dashboard/${user.id}`);
       if (response.ok) {
         const result = await response.json();
         setData(result);
+        setError('');
         
         // Setup initial attendance records (all empty/unmarked by default)
         if (result.studentsList) {
@@ -78,10 +80,16 @@ const FacultyDashboard = ({ user, onLogout }) => {
         setError('Failed to fetch faculty data.');
       }
     } catch (err) {
-      setError('Connection to backend failed.');
-      console.error(err);
+      if (retryCount < 4) {
+        setTimeout(() => fetchFacultyData(retryCount + 1), 2500);
+      } else {
+        setError('Connection to backend failed. Please ensure backend is running.');
+        console.error(err);
+      }
     } finally {
-      setLoading(false);
+      if (retryCount === 0 || retryCount >= 4) {
+        setLoading(false);
+      }
     }
   };
 

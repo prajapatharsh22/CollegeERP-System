@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const Login = ({ onLoginSuccess }) => {
   const [role, setRole] = useState('');
@@ -10,6 +10,11 @@ const Login = ({ onLoginSuccess }) => {
   const [isDarkMode, setIsDarkMode] = useState(
     document.documentElement.classList.contains('dark-theme')
   );
+
+  // Pre-warm server as soon as user opens Login page
+  useEffect(() => {
+    fetch(`${API_URL}/api/health`).catch(() => {});
+  }, []);
 
   const toggleTheme = () => {
     if (document.documentElement.classList.contains('dark-theme')) {

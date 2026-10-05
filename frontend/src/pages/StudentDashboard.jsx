@@ -36,21 +36,30 @@ const StudentDashboard = ({ user, onLogout }) => {
     }
   };
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (retryCount = 0) => {
     try {
       setLoading(true);
+      setError('');
       const response = await fetch(`${API_URL}/api/student/dashboard/${user.id}`);
       if (response.ok) {
         const result = await response.json();
         setData(result);
+        setError('');
       } else {
         setError('Failed to fetch dashboard data.');
       }
     } catch (err) {
-      setError('Connection to backend failed.');
-      console.error(err);
+      if (retryCount < 4) {
+        // Automatically retry after 2.5s if server is waking up
+        setTimeout(() => fetchDashboardData(retryCount + 1), 2500);
+      } else {
+        setError('Connection to backend failed. Please ensure backend is running.');
+        console.error(err);
+      }
     } finally {
-      setLoading(false);
+      if (retryCount === 0 || retryCount >= 4) {
+        setLoading(false);
+      }
     }
   };
 
@@ -101,6 +110,32 @@ const StudentDashboard = ({ user, onLogout }) => {
   useEffect(() => {
     fetchDashboardData();
   }, [user.id]);
+
+  if (loading && !data) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', gap: '1rem', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{ width: '48px', height: '48px', border: '4px solid rgba(99, 102, 241, 0.2)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+        <h3 style={{ color: '#1e293b', margin: 0, fontWeight: 700 }}>Connecting to campusFlow...</h3>
+        <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>Connecting to server. Please wait a moment...</p>
+      </div>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8fafc', gap: '1rem', padding: '2rem', textAlign: 'center', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{ fontSize: '3rem' }}>🔌</div>
+        <h2 style={{ color: '#ef4444', margin: 0, fontWeight: 700 }}>{error}</h2>
+        <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0, maxWidth: '400px' }}>
+          Unable to reach the backend server at <code>{API_URL}</code>.
+        </p>
+        <button onClick={() => fetchDashboardData(0)} className="btn-primary" style={{ marginTop: '0.5rem', padding: '0.75rem 1.8rem', borderRadius: '8px', cursor: 'pointer' }}>
+          🔄 Retry Connection
+        </button>
+      </div>
+    );
+  }
 
   const handleAssignmentFileChange = (e) => {
     const file = e.target.files[0];

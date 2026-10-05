@@ -11,7 +11,28 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Helper helper to format Mongo ObjectIds safely for Frontend
+// ----------------------------------------------------
+// Health Check & Anti-Sleep Keep-Alive (Prevents Cloud Free Tier Sleeping)
+// ----------------------------------------------------
+app.get('/api/health', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
+});
+
+// Self-ping every 4 minutes to prevent Render free-tier spin down
+const pingKeepAlive = () => {
+  const targetUrl = process.env.RENDER_EXTERNAL_URL || 'https://collegeerp-system.onrender.com';
+  fetch(`${targetUrl}/api/health`)
+    .then(res => res.json())
+    .then(data => console.log(`[Anti-Sleep Keep-Alive] Ping successful to ${targetUrl} (Uptime: ${Math.round(data.uptime)}s)`))
+    .catch(err => console.error('[Anti-Sleep Keep-Alive] Ping error:', err.message));
+};
+
+// Initial ping 10 seconds after boot + recurring ping every 4 minutes
+setTimeout(pingKeepAlive, 10000);
+setInterval(pingKeepAlive, 4 * 60 * 1000);
+
+// Helper to format Mongo ObjectIds safely for Frontend
 const toId = (objId) => objId ? objId.toString() : '';
 
 // ----------------------------------------------------
@@ -25,14 +46,17 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   try {
-    const loginIdentity = username.toLowerCase().trim();
+    const loginIdentity = username.trim();
+    const cleanPassword = password.trim();
+    const cleanRole = role.trim();
+
     const user = await models.User.findOne({
       $or: [
-        { username: loginIdentity },
-        { email: loginIdentity }
+        { username: new RegExp('^' + loginIdentity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
+        { email: new RegExp('^' + loginIdentity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }
       ],
-      password,
-      role
+      password: cleanPassword,
+      role: new RegExp('^' + cleanRole.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
     });
 
     if (user) {
